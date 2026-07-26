@@ -36,4 +36,3 @@ features = [
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 reqwest = "0.12"
-test-case = "3.3"
