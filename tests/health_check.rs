@@ -1,8 +1,8 @@
-use actix_hello::configuration::{self, get_configuration};
-use sqlx::{Connection, PgConnection, PgPool};
+use actix_hello::configuration::get_configuration;
+use actix_hello::startup::run;
+use sqlx::PgPool;
 use std::net::TcpListener;
 use test_case::test_case;
-use actix_hello::startup::run;
 
 pub struct TestApp {
     pub address: String,
@@ -23,7 +23,8 @@ async fn spawn_app() -> TestApp {
     tokio::spawn(server);
 
     TestApp {
-        address, db_pool: connection_pool,
+        address,
+        db_pool: connection_pool,
     }
 }
 
@@ -79,10 +80,10 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
     assert_eq!(reqwest::StatusCode::OK, response.status());
 
-       let saved = sqlx::query!("SELECT email, name FROM subscriptions LIMIT 1;")
-           .fetch_one(&test_app.db_pool)
-           .await
-           .expect("Failed to fetch seved subscription.");
+    let saved = sqlx::query!("SELECT email, name FROM subscriptions LIMIT 1;")
+        .fetch_one(&test_app.db_pool)
+        .await
+        .expect("Failed to fetch seved subscription.");
     assert_eq!(saved.name, "le guin");
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
 }
