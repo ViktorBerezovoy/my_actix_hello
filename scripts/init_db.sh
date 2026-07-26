@@ -40,3 +40,7 @@ done
 export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
 sqlx database create
 sqlx migrate run
+
+if [[ -n "${GITHUB_ENV}" ]]; then
+    echo "DATABASE_URL=${DATABASE_URL}" >> "$GITHUB_ENV"
+fi
