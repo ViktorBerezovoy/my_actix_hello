@@ -1,12 +1,27 @@
 use actix_hello::startup::run;
+use actix_hello::telemetry::{get_subscirber, init_subscriber};
 use sqlx::PgPool;
 use std::net::TcpListener;
+use std::sync::LazyLock;
+
+static TRACING: LazyLock<()> = LazyLock::new(|| {
+    let default_filter_level = "info";
+    let subscriber_name = "test";
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscirber(subscriber_name, default_filter_level, std::io::stdout);
+        init_subscriber(subscriber);
+    } else {
+        let subscriber = get_subscirber(subscriber_name, default_filter_level, std::io::sink);
+        init_subscriber(subscriber);
+    }
+});
 
 pub struct TestApp {
     pub address: String,
 }
 
 async fn spawn_app(db_pool: &PgPool) -> TestApp {
+    LazyLock::force(&TRACING);
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
