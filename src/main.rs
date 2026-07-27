@@ -1,10 +1,13 @@
-use std::net::TcpListener;
-
+use actix_hello::telemetry::{get_subscirber, init_subscriber};
 use actix_hello::{configuration::get_configuration, startup::run};
 use sqlx::PgPool;
+use std::net::TcpListener;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let subscriber = get_subscirber("actix_hello", "info", std::io::stdout);
+    init_subscriber(subscriber);
+
     let configuration = match get_configuration() {
         Ok(value) => value,
         Err(e) => panic!("Failed to load configuration {e}"),
