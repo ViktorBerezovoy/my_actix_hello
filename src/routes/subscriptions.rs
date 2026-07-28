@@ -4,7 +4,6 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct FormData {
     email: String,
@@ -27,7 +26,7 @@ pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> Ht
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
-#[tracing::instrument(name = "Saving new subscriber details in the databese", skip_all)]
+#[tracing::instrument(name = "Saving new subscriber details in the database", skip_all)]
 pub async fn insert_subscriber(pool: &PgPool, form: &FormData) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"

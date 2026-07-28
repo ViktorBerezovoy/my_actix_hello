@@ -1,5 +1,5 @@
 use actix_hello::startup::run;
-use actix_hello::telemetry::{get_subscirber, init_subscriber};
+use actix_hello::telemetry::{get_subscriber, init_subscriber};
 use sqlx::PgPool;
 use std::net::TcpListener;
 use std::sync::LazyLock;
@@ -8,10 +8,10 @@ static TRACING: LazyLock<()> = LazyLock::new(|| {
     let default_filter_level = "info";
     let subscriber_name = "test";
     if std::env::var("TEST_LOG").is_ok() {
-        let subscriber = get_subscirber(subscriber_name, default_filter_level, std::io::stdout);
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
         init_subscriber(subscriber);
     } else {
-        let subscriber = get_subscirber(subscriber_name, default_filter_level, std::io::sink);
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::sink);
         init_subscriber(subscriber);
     }
 });
