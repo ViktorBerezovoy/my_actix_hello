@@ -71,9 +71,7 @@ async fn subscribe_return_expected_status(pool: PgPool) {
         ),
     ];
 
-    for case in tast_cases {
-        let (body, status, case) = case;
-
+    for (body, status, case) in tast_cases {
         let response = client
             .post(format!("{}/subscriptions", test_app.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -114,4 +112,33 @@ async fn subscribe_returns_a_200_for_valid_form_data(pool: PgPool) {
         .expect("Failed to fetch seved subscription.");
     assert_eq!(saved.name, "le guin");
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+}
+
+#[sqlx::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_empty(pool: PgPool) {
+    let test_app = spawn_app(&pool).await;
+    let client = reqwest::Client::new();
+
+    let tast_cases = vec![
+        ("name=&email=ursula_le_guin%40gmail.com", "empty name"),
+        ("name=Ursula&email=", "empty email"),
+        ("name=Ursula&email=definitely-not-email", "invalid email"),
+    ];
+
+    for (body, description) in tast_cases {
+        let response = client
+            .post(format!("{}/subscriptions", test_app.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        assert_eq!(
+            reqwest::StatusCode::BAD_REQUEST,
+            response.status(),
+            "Got wrong status, expect {}",
+            description
+        );
+    }
 }
