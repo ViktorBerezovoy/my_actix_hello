@@ -1,20 +1,24 @@
 use config::Config;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
+use url::Url;
 
-#[derive(Deserialize, Debug)]
+use crate::domain::SubscriberEnail;
+
+#[derive(Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
+    pub email_client: EmailClientSettings,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct ApplicationSettings {
     pub port: u16,
     pub host: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: SecretString,
@@ -61,6 +65,13 @@ impl TryFrom<String> for Environment {
             )),
         }
     }
+}
+
+#[derive(Deserialize)]
+pub struct EmailClientSettings {
+    pub base_url: Url,
+    pub sender_email: SubscriberEnail,
+    pub authorization_token: SecretString,
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
