@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Debug, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate)]
+#[serde(try_from = "String")]
 pub struct SubscriberEnail {
     #[validate(email)]
     email: String,
@@ -18,6 +20,21 @@ impl SubscriberEnail {
 impl AsRef<str> for SubscriberEnail {
     fn as_ref(&self) -> &str {
         &self.email
+    }
+}
+impl TryFrom<String> for SubscriberEnail {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::parse(value)
+    }
+}
+impl Serialize for SubscriberEnail {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.email)
     }
 }
 

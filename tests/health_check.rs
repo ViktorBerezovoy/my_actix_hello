@@ -1,3 +1,5 @@
+use actix_hello::configuration::get_configuration;
+use actix_hello::email_client::EmailClient;
 use actix_hello::startup::run;
 use actix_hello::telemetry::{get_subscriber, init_subscriber};
 use sqlx::PgPool;
@@ -26,14 +28,22 @@ async fn spawn_app(db_pool: &PgPool) -> TestApp {
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
 
-    let server = run(listener, db_pool.clone()).expect("Failed to bind address");
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        configuration.email_client.sender_email,
+        configuration.email_client.authorization_token,
+        std::time::Duration::from_secs(2),
+    );
+
+    let server = run(listener, db_pool.clone(), email_client).expect("Failed to bind address");
     tokio::spawn(server);
 
     TestApp { address }
 }
 
 #[sqlx::test]
-async fn health_check_woeks(pool: PgPool) {
+async fn health_check_works(pool: PgPool) {
     let test_app = spawn_app(&pool).await;
 
     let client = reqwest::Client::new();
