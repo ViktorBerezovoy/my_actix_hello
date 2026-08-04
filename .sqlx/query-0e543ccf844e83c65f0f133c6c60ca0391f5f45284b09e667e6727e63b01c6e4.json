@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT subscriber_id, (used_at IS NOT NULL) as \"is_used!\" FROM subscription_tokens WHERE subscription_token = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subscriber_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "subscription_tokens",
+            "name": "subscriber_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "is_used!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "0e543ccf844e83c65f0f133c6c60ca0391f5f45284b09e667e6727e63b01c6e4"
+}
