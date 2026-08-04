@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE subscription_tokens SET used_at = $1 WHERE subscription_token = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fce4ab8d46b5699dd638ec4f8de7ccf3900d2f8261e3ee0c576f935d5bfebbcf"
+}

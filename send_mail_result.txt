@@ -1,0 +1,87 @@
+Welcome to fish, the friendly interactive shell
+Type help for instructions on how to use fish
+jahandar@pc-viktor ~> curl -v -X POST 'https://api.resend.com/emails' \
+                            -H 'Authorization: Bearer re_96F1KMDB_DdotnStxAYGH6hCAmkKEhyro' \
+                            -H 'Content-Type: application/json' \
+                            -d '{
+                          "from": "onboarding@resend.dev",
+                          "to": "vvb_slf@protonmail.com",
+                          "subject": "Hello World",
+                          "html": "<p>Congrats on sending your <strong>first email</strong>!</p>"
+                        }'
+Note: Unnecessary use of -X or --request, POST is already inferred.
+*   Trying [2606:4700:10::ac42:a584]:443...
+* Immediate connect fail for 2606:4700:10::ac42:a584: Сеть недоступна
+* connect to 2606:4700:10::ac42:a584 port 443 from :: port 0 failed: Сеть недоступна
+*   Trying [2606:4700:10::6814:1df2]:443...
+* Immediate connect fail for 2606:4700:10::6814:1df2: Сеть недоступна
+* connect to 2606:4700:10::6814:1df2 port 443 from :: port 0 failed: Сеть недоступна
+* Host api.resend.com:443 was resolved.
+* IPv6: 2606:4700:10::ac42:a584, 2606:4700:10::6814:1df2
+* IPv4: 172.66.165.132, 104.20.29.242
+*   Trying 172.66.165.132:443...
+* ALPN: curl offers h2,http/1.1
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* SSL Trust Anchors:
+*   CAfile: /etc/ssl/certs/ca-certificates.crt
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS change cipher, Change cipher spec (1):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, Unknown (25):
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519MLKEM768 / id-ecPublicKey
+* ALPN: server accepted h2
+* Server certificate:
+*   subject: CN=api.resend.com
+*   start date: Jul 12 18:00:22 2026 GMT
+*   expire date: Oct 10 19:00:18 2026 GMT
+*   issuer: C=US; O=Google Trust Services; CN=WE1
+*   Certificate level 0: Public key type EC/prime256v1 (256/128 Bits/secBits), signed using ecdsa-with-SHA256
+*   Certificate level 1: Public key type EC/prime256v1 (256/128 Bits/secBits), signed using ecdsa-with-SHA384
+*   Certificate level 2: Public key type EC/secp384r1 (384/192 Bits/secBits), signed using ecdsa-with-SHA384
+*   subjectAltName: "api.resend.com" matches cert's "api.resend.com"
+* OpenSSL verify result: 0
+* SSL certificate verified via OpenSSL.
+* Established connection to api.resend.com (172.66.165.132 port 443) from 192.168.2.114 port 52800 
+* using HTTP/2
+* [HTTP/2] [1] OPENED stream for https://api.resend.com/emails
+* [HTTP/2] [1] [:method: POST]
+* [HTTP/2] [1] [:scheme: https]
+* [HTTP/2] [1] [:authority: api.resend.com]
+* [HTTP/2] [1] [:path: /emails]
+* [HTTP/2] [1] [user-agent: curl/8.21.0]
+* [HTTP/2] [1] [accept: */*]
+* [HTTP/2] [1] [authorization: Bearer re_96F1KMDB_DdotnStxAYGH6hCAmkKEhyro]
+* [HTTP/2] [1] [content-type: application/json]
+* [HTTP/2] [1] [content-length: 184]
+> POST /emails HTTP/2
+> Host: api.resend.com
+> User-Agent: curl/8.21.0
+> Accept: */*
+> Authorization: Bearer re_96F1KMDB_DdotnStxAYGH6hCAmkKEhyro
+> Content-Type: application/json
+> Content-Length: 184
+> 
+* upload completely sent off: 184 bytes
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+< HTTP/2 200 
+< date: Fri, 31 Jul 2026 00:46:16 GMT
+< content-type: application/json
+< content-length: 45
+< ratelimit-limit: 10
+< ratelimit-policy: 10;w=1
+< ratelimit-remaining: 9
+< ratelimit-reset: 1
+< x-resend-daily-quota: 0
+< x-resend-monthly-quota: 2
+< cf-cache-status: DYNAMIC
+< server: cloudflare
+< cf-ray: a23895c4ec044e58-ARN
+< 
+* Connection #0 to host api.resend.com:443 left intact
+{"id":"1eeeb8dc-1746-4dc4-ad10-b54ba03b20d3"}⏎                                                                                          jahandar@pc-viktor ~> cd ~/.config/nvim/lua/core/
+jahandar@pc-viktor ~/.c/n/l/core> nvim
