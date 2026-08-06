@@ -1,4 +1,5 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{HttpResponse, ResponseError, http::StatusCode, web};
+use anyhow::Context;
 use chrono::Utc;
 use rand::{RngExt, distr::Alphabetic, rngs::ThreadRng};
 use serde::Deserialize;
@@ -37,54 +38,42 @@ pub async fn subscribe(
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     base_url: web::Data<ApplicationBaseUrl>,
-) -> HttpResponse {
+) -> Result<HttpResponse, SubscribeError> {
     let form = form.into_inner();
-    let new_subscriber = match NewSubscriber::build(form.email, form.name) {
-        Ok(subscriber) => subscriber,
-        Err(msg) => return HttpResponse::BadRequest().body(msg),
-    };
-    let mut transaction = match pool.begin().await {
-        Ok(transaction) => transaction,
-        Err(e) => {
-            tracing::error!("Cteate transaction error: {:?}", e);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-    let (subscriber_id, status) = match insert_subscriber(&mut transaction, &new_subscriber).await {
-        Ok(val) => val,
-        Err(e) => {
-            tracing::error!("Databese record error: {}", e);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+    let new_subscriber =
+        NewSubscriber::build(form.email, form.name).map_err(SubscribeError::ValidationError)?;
+    let mut transaction = pool
+        .begin()
+        .await
+        .context("Failed to acquire a Postgres connection from the pool")?;
+    let (subscriber_id, status) = insert_subscriber(&mut transaction, &new_subscriber)
+        .await
+        .context("Failed to insert new subscriber in the database")?;
     if status == SubscriptionsStatus::Confirmed {
-        if transaction.commit().await.is_err() {
-            return HttpResponse::InternalServerError().finish();
-        }
-        return HttpResponse::Ok().finish();
+        transaction
+            .commit()
+            .await
+            .context("Failed to commin SQL transaction for existing user")?;
+        return Ok(HttpResponse::Ok().finish());
     }
     let subscription_token = generate_subscription_token();
-    if let Err(e) = store_token(&mut transaction, subscriber_id, &subscription_token).await {
-        tracing::error!("Saving email error: {}", e);
-        return HttpResponse::InternalServerError().finish();
-    }
-    if let Err(e) = transaction.commit().await {
-        tracing::error!("Failed to commint transaction: {:?}", e);
-        return HttpResponse::InternalServerError().finish();
-    }
-    if let Err(e) = send_confirmation_email(
+    store_token(&mut transaction, subscriber_id, &subscription_token)
+        .await
+        .context("Failed to store the confirmation token for new subscriber")?;
+    transaction
+        .commit()
+        .await
+        .context("Failed to commin SQL transaction for new user")?;
+    send_confirmation_email(
         &email_client,
         &new_subscriber,
         &base_url.0,
         &subscription_token,
     )
     .await
-    {
-        tracing::error!("Sending email error: {}", e);
-        return HttpResponse::InternalServerError().finish();
-    }
+    .context("Failed to send a confirmation email")?;
 
-    HttpResponse::Ok().finish()
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[tracing::instrument(name = "Sending confirmation email to a new subscriber", skip_all)]
@@ -155,11 +144,7 @@ async fn store_token(
         subscriber_id
     )
     .execute(connection)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    .await?;
     Ok(())
 }
 
@@ -170,4 +155,38 @@ fn generate_subscription_token() -> SubscriberToken {
         .take(25)
         .collect();
     token_str.try_into().expect("generator create wrong token!")
+}
+
+fn error_chain_fmt(
+    e: &impl std::error::Error,
+    f: &mut std::fmt::Formatter<'_>,
+) -> std::fmt::Result {
+    writeln!(f, "{}\n", e)?;
+    let mut current = e.source();
+    while let Some(cause) = current {
+        writeln!(f, "Caused by:\n\t{}", cause)?;
+        current = cause.source();
+    }
+    Ok(())
+}
+
+#[derive(thiserror::Error)]
+pub enum SubscribeError {
+    #[error("{0}")]
+    ValidationError(String),
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
+}
+impl std::fmt::Debug for SubscribeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
+}
+impl ResponseError for SubscribeError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            Self::ValidationError(_) => StatusCode::BAD_REQUEST,
+            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
 }

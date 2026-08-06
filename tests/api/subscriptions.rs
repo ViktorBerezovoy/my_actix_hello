@@ -160,3 +160,21 @@ async fn sebscribe_send_a_second_email_for_not_confirmed_user(pool: PgPool) {
 
     assert_eq!(email_requests.len(), 2);
 }
+
+#[sqlx::test]
+async fn subscribe_falis_if_there_is_a_fatal_database_error(pool: PgPool) {
+    let test_app = spawn_app(&pool).await;
+    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
+
+    sqlx::query!("ALTER TABLE subscription_tokens DROP COLUMN subscription_token;")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let response = test_app.post_subscriptions(body).await;
+
+    assert_eq!(
+        response.status(),
+        reqwest::StatusCode::INTERNAL_SERVER_ERROR
+    );
+}
