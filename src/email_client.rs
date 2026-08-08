@@ -1,4 +1,4 @@
-use crate::domain::SubscriberEnail;
+use crate::domain::SubscriberEmail;
 use reqwest::Client;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Serialize;
@@ -6,13 +6,13 @@ use serde::Serialize;
 pub struct EmailClient {
     http_client: Client,
     base_url: reqwest::Url,
-    sender: SubscriberEnail,
+    sender: SubscriberEmail,
     authorization_token: SecretString,
 }
 impl EmailClient {
     pub fn new(
         base_url: reqwest::Url,
-        sender: SubscriberEnail,
+        sender: SubscriberEmail,
         authorization_token: SecretString,
         timeout: std::time::Duration,
     ) -> Self {
@@ -26,7 +26,7 @@ impl EmailClient {
     }
     pub async fn send_email(
         &self,
-        recipient: &SubscriberEnail,
+        recipient: &SubscriberEmail,
         subject: &str,
         html_content: &str,
         text_content: &str,
@@ -58,8 +58,8 @@ impl EmailClient {
 
 #[derive(Serialize)]
 struct SendEmailRequest<'a> {
-    from: &'a SubscriberEnail,
-    to: &'a SubscriberEnail,
+    from: &'a SubscriberEmail,
+    to: &'a SubscriberEmail,
     subject: &'a str,
     html: &'a str,
     text: &'a str,
@@ -81,7 +81,7 @@ mod tests {
         matchers::{header, header_exists, method, path},
     };
 
-    use crate::{domain::SubscriberEnail, email_client::EmailClient};
+    use crate::{domain::SubscriberEmail, email_client::EmailClient};
 
     struct SendEmailBodyMatcher;
     impl wiremock::Match for SendEmailBodyMatcher {
@@ -104,8 +104,8 @@ mod tests {
     fn content() -> String {
         Paragraph(1..10).fake()
     }
-    fn email() -> SubscriberEnail {
-        SubscriberEnail::parse(SafeEmail().fake()).unwrap()
+    fn email() -> SubscriberEmail {
+        SubscriberEmail::parse(SafeEmail().fake()).unwrap()
     }
     fn email_client(base_url: Url) -> EmailClient {
         EmailClient::new(
