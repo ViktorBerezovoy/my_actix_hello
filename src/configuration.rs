@@ -3,7 +3,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use url::Url;
 
-use crate::domain::SubscriberEnail;
+use crate::domain::SubscriberEmail;
 
 #[derive(Deserialize)]
 pub struct Settings {
@@ -71,7 +71,7 @@ impl TryFrom<String> for Environment {
 #[derive(Deserialize)]
 pub struct EmailClientSettings {
     pub base_url: Url,
-    pub sender_email: SubscriberEnail,
+    pub sender_email: SubscriberEmail,
     pub authorization_token: SecretString,
 }
 

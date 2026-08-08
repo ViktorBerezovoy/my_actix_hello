@@ -1,7 +1,7 @@
 use crate::configuration::Settings;
 use crate::email_client::EmailClient;
 use crate::routes::subscriptions_confirm::confirm;
-use crate::routes::{health_check, subscribe};
+use crate::routes::{health_check, publish_newsletter, subscribe};
 use actix_web::{App, HttpServer, dev::Server, web};
 use sqlx::PgPool;
 use std::net::{SocketAddr, TcpListener};
@@ -62,6 +62,7 @@ fn run(
         App::new()
             .wrap(TracingLogger::default())
             .service(health_check)
+            .route("/newsletters", web::post().to(publish_newsletter))
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
             .app_data(db_pool.clone())

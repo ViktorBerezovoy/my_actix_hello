@@ -124,11 +124,7 @@ async fn insert_subscriber(
         SubscriptionsStatus::PendingConfirmation as SubscriptionsStatus,
     )
     .fetch_one(connection)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    .await?;
     Ok((record.id, record.status))
 }
 
@@ -157,7 +153,7 @@ fn generate_subscription_token() -> SubscriberToken {
     token_str.try_into().expect("generator create wrong token!")
 }
 
-fn error_chain_fmt(
+pub fn error_chain_fmt(
     e: &impl std::error::Error,
     f: &mut std::fmt::Formatter<'_>,
 ) -> std::fmt::Result {
