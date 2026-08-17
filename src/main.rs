@@ -18,6 +18,6 @@ async fn main() -> std::io::Result<()> {
         PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
             .expect("Failed to connect to Postgres.");
 
-    let application = Application::build(configuration, &connection_pool)?;
+    let application = Application::build(configuration, &connection_pool, None)?;
     application.run().await
 }

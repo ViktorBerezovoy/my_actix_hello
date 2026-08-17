@@ -1,9 +1,8 @@
 use crate::helpers::spawn_app;
-use sqlx::PgPool;
 
-#[sqlx::test]
-async fn health_check_works(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn health_check_works() {
+    let test_app = spawn_app().await;
 
     let client = reqwest::Client::new();
 

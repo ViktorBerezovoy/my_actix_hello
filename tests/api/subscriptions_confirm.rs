@@ -1,5 +1,4 @@
 use actix_hello::routes::SubscriptionsStatus;
-use sqlx::PgPool;
 use wiremock::{
     Mock, ResponseTemplate,
     matchers::{method, path},
@@ -7,9 +6,9 @@ use wiremock::{
 
 use crate::helpers::spawn_app;
 
-#[sqlx::test]
-async fn confimations_without_token_are_rejected_with_a_400(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn confimations_without_token_are_rejected_with_a_400() {
+    let test_app = spawn_app().await;
 
     let response = reqwest::get(&format!("{}/subscriptions/confirm", test_app.address))
         .await
@@ -18,9 +17,9 @@ async fn confimations_without_token_are_rejected_with_a_400(pool: PgPool) {
     assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST)
 }
 
-#[sqlx::test]
-async fn the_link_returned_by_subscribe_returns_a_200_if_called(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -35,9 +34,9 @@ async fn the_link_returned_by_subscribe_returns_a_200_if_called(pool: PgPool) {
 
     assert_eq!(response.status(), reqwest::StatusCode::OK)
 }
-#[sqlx::test]
-async fn clicking_on_the_confirmation_link_confirms_a_subscriber(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn clicking_on_the_confirmation_link_confirms_a_subscriber() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -57,16 +56,16 @@ async fn clicking_on_the_confirmation_link_confirms_a_subscriber(pool: PgPool) {
     let saved = sqlx::query!(
         r#"SELECT email, name, status AS "status: SubscriptionsStatus" FROM subscriptions LIMIT 1;"#
     )
-    .fetch_one(&pool)
+    .fetch_one(&test_app.db_pool)
     .await
     .expect("Failed to fetch saved subscription.");
     assert_eq!(saved.name, "le guin");
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
     assert_eq!(saved.status, SubscriptionsStatus::Confirmed);
 }
-#[sqlx::test]
-async fn clicking_on_the_confirmation_link_twice_returns_200(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn clicking_on_the_confirmation_link_twice_returns_200() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))

@@ -1,14 +1,13 @@
 use crate::helpers::spawn_app;
 use actix_hello::routes::SubscriptionsStatus;
-use sqlx::PgPool;
 use wiremock::{
     Mock, ResponseTemplate,
     matchers::{method, path},
 };
 
-#[sqlx::test]
-async fn subscribe_return_expected_status(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn subscribe_return_expected_status() {
+    let test_app = spawn_app().await;
     let test_cases = vec![
         (
             "name=le%20guin",
@@ -39,9 +38,9 @@ async fn subscribe_return_expected_status(pool: PgPool) {
     }
 }
 
-#[sqlx::test]
-async fn subscribe_returns_a_200_for_valid_form_data(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn subscribe_returns_a_200_for_valid_form_data() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -56,16 +55,16 @@ async fn subscribe_returns_a_200_for_valid_form_data(pool: PgPool) {
     assert_eq!(reqwest::StatusCode::OK, response.status());
 
     let saved = sqlx::query!("SELECT email, name FROM subscriptions LIMIT 1;")
-        .fetch_one(&pool)
+        .fetch_one(&test_app.db_pool)
         .await
         .expect("Failed to fetch saved subscription.");
     assert_eq!(saved.name, "le guin");
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
 }
 
-#[sqlx::test]
-async fn subscribe_persists_the_new_subscriber(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn subscribe_persists_the_new_subscriber() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -80,7 +79,7 @@ async fn subscribe_persists_the_new_subscriber(pool: PgPool) {
     let saved = sqlx::query!(
         r#"SELECT email, name, status AS "status: SubscriptionsStatus" FROM subscriptions LIMIT 1;"#
     )
-    .fetch_one(&pool)
+    .fetch_one(&test_app.db_pool)
     .await
     .expect("Failed to fetch saved subscription.");
     assert_eq!(saved.name, "le guin");
@@ -88,9 +87,9 @@ async fn subscribe_persists_the_new_subscriber(pool: PgPool) {
     assert_eq!(saved.status, SubscriptionsStatus::PendingConfirmation);
 }
 
-#[sqlx::test]
-async fn subscribe_returns_a_400_when_fields_are_present_but_empty(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_empty() {
+    let test_app = spawn_app().await;
     let test_cases = vec![
         ("name=&email=ursula_le_guin%40gmail.com", "empty name"),
         ("name=Ursula&email=", "empty email"),
@@ -108,9 +107,9 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_empty(pool: PgPool)
         );
     }
 }
-#[sqlx::test]
-async fn sebscribe_send_a_confirmation_email_for_valid_data(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn sebscribe_send_a_confirmation_email_for_valid_data() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -122,9 +121,9 @@ async fn sebscribe_send_a_confirmation_email_for_valid_data(pool: PgPool) {
 
     test_app.post_subscriptions(body).await;
 }
-#[sqlx::test]
-async fn sebscribe_send_a_confirmation_email_with_a_link(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn sebscribe_send_a_confirmation_email_with_a_link() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -140,9 +139,9 @@ async fn sebscribe_send_a_confirmation_email_with_a_link(pool: PgPool) {
 
     assert_eq!(confirmation_links.html, confirmation_links.plain_text);
 }
-#[sqlx::test]
-async fn sebscribe_send_a_second_email_for_not_confirmed_user(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn sebscribe_send_a_second_email_for_not_confirmed_user() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     Mock::given(method("POST"))
@@ -161,13 +160,13 @@ async fn sebscribe_send_a_second_email_for_not_confirmed_user(pool: PgPool) {
     assert_eq!(email_requests.len(), 2);
 }
 
-#[sqlx::test]
-async fn subscribe_falis_if_there_is_a_fatal_database_error(pool: PgPool) {
-    let test_app = spawn_app(&pool).await;
+#[tokio::test]
+async fn subscribe_falis_if_there_is_a_fatal_database_error() {
+    let test_app = spawn_app().await;
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
     sqlx::query!("ALTER TABLE subscription_tokens DROP COLUMN subscription_token;")
-        .execute(&pool)
+        .execute(&test_app.db_pool)
         .await
         .unwrap();
 

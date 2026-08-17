@@ -21,13 +21,18 @@ validator = { version = "0.21", features = ["derive"] }
 reqwest = { version = "0.13", features = ["json", "form"] }
 url = { version = "2", features = ["serde"] }
 rand = "0.10"
+base64 = "0.23"
 anyhow = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
 tracing-bunyan-formatter = "0.3"
 tracing-log = "0.1"
 tracing-actix-web = "0.7"
+hex = "0.4"
+argon2 = { version = "0.5", features = ["std"] }
+dotenvy = "0.15.7"
 
 [dependencies.sqlx]
 version = "0.9"
@@ -47,7 +52,6 @@ features = [
 ]
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 fake = "5.1"
 quickcheck = "1"
 quickcheck_macros = "1"

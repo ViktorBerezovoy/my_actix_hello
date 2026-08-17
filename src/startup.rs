@@ -13,7 +13,11 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn build(configuration: Settings, pg_pool: &PgPool) -> Result<Self, std::io::Error> {
+    pub fn build(
+        configuration: Settings,
+        pg_pool: &PgPool,
+        workers: Option<usize>,
+    ) -> Result<Self, std::io::Error> {
         let email_client = EmailClient::new(
             configuration.email_client.base_url,
             configuration.email_client.sender_email,
@@ -32,6 +36,7 @@ impl Application {
             pg_pool.clone(),
             email_client,
             configuration.application.base_url,
+            workers,
         )?;
 
         Ok(Self {
@@ -54,11 +59,13 @@ fn run(
     db_pool: PgPool,
     email_client: EmailClient,
     base_url: String,
+    workers: Option<usize>,
 ) -> Result<Server, std::io::Error> {
     let db_pool = web::Data::new(db_pool);
     let email_client = web::Data::new(email_client);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
-    let server = HttpServer::new(move || {
+
+    let mut server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
             .service(health_check)
@@ -68,9 +75,11 @@ fn run(
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
-    })
-    .listen(listener)?
-    .run();
+    });
 
-    Ok(server)
+    if let Some(worker_number) = workers {
+        server = server.workers(worker_number);
+    }
+
+    Ok(server.listen(listener)?.run())
 }

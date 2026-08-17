@@ -39,6 +39,16 @@ impl DatabaseSettings {
             self.database_name
         ))
     }
+
+    pub fn connection_string_without_db(&self) -> SecretString {
+        SecretString::from(format!(
+            "postgres://{}:{}@{}:{}/",
+            self.username,
+            self.password.expose_secret(),
+            self.host,
+            self.port,
+        ))
+    }
 }
 
 pub enum Environment {
