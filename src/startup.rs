@@ -1,8 +1,9 @@
 use crate::configuration::Settings;
 use crate::email_client::EmailClient;
 use crate::routes::subscriptions_confirm::confirm;
-use crate::routes::{health_check, publish_newsletter, subscribe};
+use crate::routes::{health_check, home, login, login_form, publish_newsletter, subscribe};
 use actix_web::{App, HttpServer, dev::Server, web};
+use secrecy::SecretString;
 use sqlx::PgPool;
 use std::net::{SocketAddr, TcpListener};
 use tracing_actix_web::TracingLogger;
@@ -36,6 +37,7 @@ impl Application {
             pg_pool.clone(),
             email_client,
             configuration.application.base_url,
+            configuration.application.hmac_secret,
             workers,
         )?;
 
@@ -53,12 +55,14 @@ impl Application {
 }
 
 pub struct ApplicationBaseUrl(pub String);
+pub struct HmacSecret(pub SecretString);
 
 fn run(
     listener: TcpListener,
     db_pool: PgPool,
     email_client: EmailClient,
     base_url: String,
+    hmac_secret: SecretString,
     workers: Option<usize>,
 ) -> Result<Server, std::io::Error> {
     let db_pool = web::Data::new(db_pool);
@@ -69,12 +73,16 @@ fn run(
         App::new()
             .wrap(TracingLogger::default())
             .service(health_check)
+            .route("/", web::get().to(home))
+            .route("/login", web::get().to(login_form))
+            .route("/login", web::post().to(login))
             .route("/newsletters", web::post().to(publish_newsletter))
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
+            .app_data(web::Data::new(HmacSecret(hmac_secret.clone())))
     });
 
     if let Some(worker_number) = workers {
