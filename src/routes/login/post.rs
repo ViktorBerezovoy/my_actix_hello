@@ -1,12 +1,15 @@
-use actix_web::{HttpResponse, error::InternalError, http::header::LOCATION, web};
-use hmac::{Hmac, KeyInit, Mac};
-use secrecy::{ExposeSecret, SecretString};
+use actix_web::{
+    HttpResponse, ResponseError,
+    http::{StatusCode, header::LOCATION},
+    web,
+};
+use actix_web_flash_messages::FlashMessage;
+use secrecy::SecretString;
 use sqlx::PgPool;
 
 use crate::{
     authentication::{AuthError, Credentials, validate_credentials},
     routes::error_chain_fmt,
-    startup::HmacSecret,
 };
 
 #[derive(serde::Deserialize)]
@@ -22,8 +25,7 @@ pub struct FormData {
 pub async fn login(
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
-    secret: web::Data<HmacSecret>,
-) -> Result<HttpResponse, InternalError<LoginError>> {
+) -> Result<HttpResponse, LoginError> {
     let form_data = form.into_inner();
     let credentials = Credentials {
         username: form_data.username,
@@ -46,29 +48,16 @@ pub async fn login(
                 AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
             };
 
-            let query_string = format!(
-                "error={}",
-                url::form_urlencoded::byte_serialize(e.to_string().as_bytes()).collect::<String>()
-            );
-            let hmac_tag = {
-                let mut mac =
-                    Hmac::<sha2::Sha256>::new_from_slice(secret.0.expose_secret().as_bytes())
-                        .unwrap();
-                mac.update(query_string.as_bytes());
-                hex::encode(mac.finalize().into_bytes())
-            };
+            FlashMessage::error(e.to_string()).send();
 
-            let response = HttpResponse::SeeOther()
-                .insert_header((LOCATION, format!("/login?{query_string}&tag={hmac_tag}")))
-                .finish();
-            Err(InternalError::from_response(e, response))
+            Err(e)
         }
     }
 }
 
 #[derive(thiserror::Error)]
 pub enum LoginError {
-    #[error("Authentincation failed")]
+    #[error("Authentication failed")]
     AuthEroo(#[source] anyhow::Error),
     #[error("Something went wrong")]
     UnexpectedError(#[from] anyhow::Error),
@@ -77,5 +66,17 @@ pub enum LoginError {
 impl std::fmt::Debug for LoginError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         error_chain_fmt(self, f)
+    }
+}
+
+impl ResponseError for LoginError {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        StatusCode::SEE_OTHER
+    }
+
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        HttpResponse::build(self.status_code())
+            .insert_header((LOCATION, "/login"))
+            .finish()
     }
 }
