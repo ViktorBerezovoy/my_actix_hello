@@ -36,6 +36,7 @@ html-escape = "0.2"
 hmac = "0.13"
 sha2 = "0.11"
 actix-web-flash-messages = { version = "0.5", features = ["cookies"] }
+actix-session = { version = "0.11", features = ["redis-session", "redis-session-rustls"] }
 
 [dependencies.reqwest]
 version = "0.13"
@@ -57,6 +58,7 @@ features = [
 version = "1.24"
 features = [
     "v4",
+    "serde"
 ]
 
 [dev-dependencies]
@@ -64,5 +66,5 @@ fake = "5.1"
 quickcheck = "1"
 quickcheck_macros = "1"
 wiremock = "0.6"
-serde_json = "1"
 linkify = "0.11"
+serde_json = "1"

@@ -1,3 +1,8 @@
+use crate::{
+    authentication::{AuthError, Credentials, validate_credentials},
+    routes::error_chain_fmt,
+    session_state::TypedSession,
+};
 use actix_web::{
     HttpResponse, ResponseError,
     http::{StatusCode, header::LOCATION},
@@ -6,11 +11,6 @@ use actix_web::{
 use actix_web_flash_messages::FlashMessage;
 use secrecy::SecretString;
 use sqlx::PgPool;
-
-use crate::{
-    authentication::{AuthError, Credentials, validate_credentials},
-    routes::error_chain_fmt,
-};
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -25,6 +25,7 @@ pub struct FormData {
 pub async fn login(
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
+    session: TypedSession,
 ) -> Result<HttpResponse, LoginError> {
     let form_data = form.into_inner();
     let credentials = Credentials {
@@ -37,20 +38,22 @@ pub async fn login(
     match validate_credentials(credentials, &pool).await {
         Ok(user_id) => {
             tracing::Span::current().record("user_id", tracing::field::display(&user_id));
+            session.renew();
 
+            session
+                .insert_user_id(user_id)
+                .map_err(|e| LoginError::UnexpectedError(e.into()).with_flash_message())?;
             Ok(HttpResponse::SeeOther()
-                .insert_header((LOCATION, "/"))
+                .insert_header((LOCATION, "/admin/dashboard"))
                 .finish())
         }
         Err(e) => {
             let e = match e {
-                AuthError::InvalidCredenrials(_) => LoginError::AuthEroo(e.into()),
+                AuthError::InvalidCredenrials(_) => LoginError::AuthError(e.into()),
                 AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
             };
 
-            FlashMessage::error(e.to_string()).send();
-
-            Err(e)
+            Err(e.with_flash_message())
         }
     }
 }
@@ -58,7 +61,7 @@ pub async fn login(
 #[derive(thiserror::Error)]
 pub enum LoginError {
     #[error("Authentication failed")]
-    AuthEroo(#[source] anyhow::Error),
+    AuthError(#[source] anyhow::Error),
     #[error("Something went wrong")]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -78,5 +81,12 @@ impl ResponseError for LoginError {
         HttpResponse::build(self.status_code())
             .insert_header((LOCATION, "/login"))
             .finish()
+    }
+}
+
+impl LoginError {
+    fn with_flash_message(self) -> Self {
+        FlashMessage::error(self.to_string()).send();
+        self
     }
 }
