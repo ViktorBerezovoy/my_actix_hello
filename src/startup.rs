@@ -2,8 +2,11 @@ use crate::configuration::Settings;
 use crate::email_client::EmailClient;
 use crate::routes::subscriptions_confirm::confirm;
 use crate::routes::{health_check, home, login, login_form, publish_newsletter, subscribe};
+use actix_web::cookie::Key;
 use actix_web::{App, HttpServer, dev::Server, web};
-use secrecy::SecretString;
+use actix_web_flash_messages::FlashMessagesFramework;
+use actix_web_flash_messages::storage::CookieMessageStore;
+use secrecy::{ExposeSecret, SecretString};
 use sqlx::PgPool;
 use std::net::{SocketAddr, TcpListener};
 use tracing_actix_web::TracingLogger;
@@ -69,8 +72,13 @@ fn run(
     let email_client = web::Data::new(email_client);
     let base_url = web::Data::new(ApplicationBaseUrl(base_url));
 
+    let message_store =
+        CookieMessageStore::builder(Key::from(hmac_secret.expose_secret().as_bytes())).build();
+    let message_framework = FlashMessagesFramework::builder(message_store).build();
+
     let mut server = HttpServer::new(move || {
         App::new()
+            .wrap(message_framework.clone())
             .wrap(TracingLogger::default())
             .service(health_check)
             .route("/", web::get().to(home))
