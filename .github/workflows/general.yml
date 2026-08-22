@@ -50,6 +50,8 @@ jobs:
 
       - name: Check that queries are fresh
         run: cargo sqlx prepare --workspace --check -- --all-targets
+      - name: Run Valkey via Podman
+        run: ./scripts/init_valkey.sh
 
       - name: Run tests
         env:

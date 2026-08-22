@@ -193,7 +193,7 @@ pub struct TestApp {
     pub db_pool: PgPool,
     client: reqwest::Client,
     pub test_user: TestUser,
-    server_handler: tokio::task::JoinHandle<Result<(), std::io::Error>>,
+    server_handler: tokio::task::JoinHandle<Result<(), anyhow::Error>>,
 }
 impl TestApp {
     pub async fn post_subscriptions(&self, body: &str) -> reqwest::Response {
@@ -256,6 +256,16 @@ impl TestApp {
             .await
             .unwrap()
     }
+    pub async fn get_admin_dashboard(&self) -> reqwest::Response {
+        self.client
+            .get(format!("{}/admin/dashboard", self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+    pub async fn get_admin_dashboard_html(&self) -> String {
+        self.get_admin_dashboard().await.text().await.unwrap()
+    }
 }
 impl Drop for TestApp {
     fn drop(&mut self) {
@@ -278,6 +288,7 @@ pub async fn spawn_app() -> TestApp {
     let database_name = format!("test_db_{}", Uuid::new_v4());
     let db_pool = configure_database(&database_name).await;
     let application = Application::build(configuration, &db_pool.clone(), Some(4))
+        .await
         .expect("Failed to create application");
     let socket_addr = application.address();
     let address = format!("http://{}:{}", socket_addr.ip(), socket_addr.port());

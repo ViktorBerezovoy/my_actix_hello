@@ -5,7 +5,7 @@ use secrecy::ExposeSecret;
 use sqlx::PgPool;
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     let subscriber = get_subscriber("actix_hello", "info", std::io::stdout);
     init_subscriber(subscriber);
 
@@ -18,6 +18,6 @@ async fn main() -> std::io::Result<()> {
         PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
             .expect("Failed to connect to Postgres.");
 
-    let application = Application::build(configuration, &connection_pool, None)?;
+    let application = Application::build(configuration, &connection_pool, None).await?;
     application.run().await
 }
